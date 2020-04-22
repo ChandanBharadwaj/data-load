@@ -1,4 +1,4 @@
-package com.chandan;
+package com.chaitu;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
