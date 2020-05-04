@@ -1,4 +1,4 @@
-package com.chaitu.controller;
+package com.chaitu.batch.controller;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
