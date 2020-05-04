@@ -25,6 +25,8 @@ public class BatchConfiguration {
 
 	@Autowired
 	TableSchemaRepo tableSchemaRepo;
+	@Value("${job.chunk}")
+	Integer chunk;
 	
 	@Autowired
     private JobBuilderFactory jobBuilderFactory;
@@ -43,7 +45,7 @@ public class BatchConfiguration {
 	@Bean
 	@JobScope
 	public Step step(@Value("#{jobParameters[jobName]}") String jobName) {
-		return stepBuilderFactory.get("step").chunk(2).reader(reader(jobName)).writer(writer(jobName))
+		return stepBuilderFactory.get("step").chunk(chunk).reader(reader(jobName)).writer(writer(jobName))
 				.build();
 	}
 
