@@ -104,7 +104,6 @@ public class SampleController {
 		}
 		query = StringUtils.removeEnd(query, ", ");
 		query = query+" )";
-		System.out.println(query);
 		return query;
 	}
 }

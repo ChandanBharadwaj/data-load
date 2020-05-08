@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.JobParametersInvalidException;
@@ -37,25 +38,39 @@ public class JobLauncherService {
 	public void launchJob(String jobName) {
 		LocalDateTime startTime;
 		LocalDateTime endTime;
-		String status;
+		String hstatus = null;
+		boolean isFailed =true;
 		startTime = LocalDateTime.now();
 		JobParameters j = new JobParametersBuilder().addLong("time", System.currentTimeMillis())
 				.addString("jobName", jobName).toJobParameters();
 		sendEvent(new JobEvent(jobName, startTime.toString()));
 		try {
-			jobLauncher.run(job, j);
-			status = "Success";
+			JobExecution ex =jobLauncher.run(job, j);
+			if(ex.getExitStatus().getExitCode().equals("FAILED")) {
+				hstatus = ex.getExitStatus().getExitDescription();
+				if(hstatus.contains("Error while writing the data to db, due to number fields mismatch")) {
+					hstatus = "Error while writing the data to db, due to number fields mismatch";
+				} else if(hstatus.contains("Error while writing the data to db, Please check the field types in the schema")) {
+					hstatus = "Error while writing the data to db, Please check the field types in the schema";
+				} else {
+					hstatus = hstatus.substring(0, 150);
+				}
+			}else {
+				hstatus = "Success";	
+				isFailed = false;
+			}			
 		} catch (JobExecutionAlreadyRunningException | JobRestartException | JobInstanceAlreadyCompleteException
 				| JobParametersInvalidException e) {
-			status = "Failed : " + e.getMessage();
+			
+			hstatus = e.getMessage();
 		}
 		endTime = LocalDateTime.now();
-		sendEvent(new JobEvent(jobName,endTime.toString(),status));
+		sendEvent(new JobEvent(jobName,endTime.toString(),hstatus,isFailed));
 		JobHistory jh = new JobHistory();
 		jh.setJobName(jobName);
 		jh.setEndTime(endTime);
 		jh.setStartTime(startTime);
-		jh.setStatus(status);
+		jh.setStatus("Failed : " + hstatus);
 		jobHistoryRepo.save(jh);
 	}
 
@@ -70,7 +85,7 @@ public class JobLauncherService {
 	}
 	
 	public List<JobHistory> getJobHistory(){
-		return jobHistoryRepo.findAllByOrderByStartTime();
+		return jobHistoryRepo.findAllByOrderByStartTimeDesc();
 	}
 	
 }

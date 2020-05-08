@@ -5,9 +5,11 @@ import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.JobScope;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.ItemStreamReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -25,6 +27,7 @@ public class BatchConfiguration {
 
 	@Autowired
 	TableSchemaRepo tableSchemaRepo;
+	
 	@Value("${job.chunk}")
 	Integer chunk;
 	
@@ -45,23 +48,35 @@ public class BatchConfiguration {
 	@Bean
 	@JobScope
 	public Step step(@Value("#{jobParameters[jobName]}") String jobName) {
-		return stepBuilderFactory.get("step").chunk(chunk).reader(reader(jobName)).writer(writer(jobName))
+		return stepBuilderFactory.get("step")
+				.chunk(chunk)
+				.reader(reader(jobName))
+				.writer(writer(jobName))
 				.build();
 	}
-
+	
 	@Bean
-	@JobScope
+	@StepScope
 	ItemStreamReader reader(@Value("#{jobParameters[jobName]}") String jobName) {
 		TableSchema ts =tableSchemaRepo.findByTableName(jobName);
-		PoiItemReader reader = new PoiItemReader();
-		reader.setResource(new ClassPathResource(ts.getFileName()));
-		reader.setRowMapper(new PassThroughRowMapper());
-		reader.setLinesToSkip(1);
-		return reader;	
+		if(ts.getFileName().endsWith(".csv")) {			
+			FlatFileItemReader freader = new FlatFileItemReader();
+			freader.setResource(new ClassPathResource(ts.getFileName()));
+			freader.setLinesToSkip(1);
+			freader.setLineMapper(new CustomLineMapper());
+			return freader;
+		}else if(ts.getFileName().endsWith(".xlsx")) {
+			PoiItemReader reader = new PoiItemReader();
+			reader.setResource(new ClassPathResource(ts.getFileName()));
+			reader.setRowMapper(new PassThroughRowMapper());
+			reader.setLinesToSkip(1);
+			return reader;	
+		}
+		return null;
 	}
 
 	@Bean
-	@JobScope
+	@StepScope
 	public ItemWriter writer(@Value("#{jobParameters[jobName]}") String jobName) {
 		TableSchema ts =tableSchemaRepo.findByTableName(jobName);
 		return new CustomItemWriter(ts);

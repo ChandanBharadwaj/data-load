@@ -3,11 +3,14 @@ package com.chaitu.batch.models;
 public class JobEvent {
 	
 	String name;
-	public JobEvent(String name, String endTime, String status) {
+	boolean isFailed;
+	
+	public JobEvent(String name, String endTime, String status, boolean isFailed) {
 		super();
 		this.name = name;
 		this.endTime = endTime;
 		this.status = status;
+		this.isFailed = isFailed;
 	}
 	public JobEvent(String name, String startTime) {
 		super();
@@ -41,6 +44,12 @@ public class JobEvent {
 	}
 	public void setStatus(String status) {
 		this.status = status;
+	}
+	public boolean isFailed() {
+		return isFailed;
+	}
+	public void setFailed(boolean isFailed) {
+		this.isFailed = isFailed;
 	}
 	
 }

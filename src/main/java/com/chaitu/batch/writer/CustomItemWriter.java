@@ -30,13 +30,21 @@ public class CustomItemWriter implements ItemWriter {
 
 	@Override
 	public void write(List list) throws Exception {
-		GsonJsonParser j = new GsonJsonParser();
-		Map<String,String> map = (Map<String,String>)(Object)j.parseMap(ts.getSchema());
-		List<String> types = new ArrayList<String>();
-		map.values().forEach(item ->{
-			types.add(item);
-		});
-		insertIntoDb(ts.getTableName(), new ArrayList<String>(map.keySet()),types, list);
+		try {
+			GsonJsonParser j = new GsonJsonParser();
+			Map<String,String> map = (Map<String,String>)(Object)j.parseMap(ts.getSchema());
+			List<String> types = new ArrayList<String>();
+			map.values().forEach(item ->{
+				types.add(item);
+			});
+			insertIntoDb(ts.getTableName(), new ArrayList<String>(map.keySet()),types, list);	
+		}catch (Exception e){
+			if( e instanceof IndexOutOfBoundsException) {				
+				throw new RuntimeException("Error while writing the data to db, due to number fields mismatch");
+			}
+			throw new RuntimeException("Error while writing the data to db, Please check the field types in the schema");
+		}
+		
 	}
 
 	private int[] insertIntoDb(String tableName, List<String> headers, List<String> types, List<String[]> list) throws SQLException {
